@@ -4,11 +4,11 @@
 #include "utils.h"
 
 constexpr uint8_t QOI_OP_INDEX_TAG = 0x00;
-constexpr uint8_t QOI_OP_DIFF_TAG  = 0x40;
-constexpr uint8_t QOI_OP_LUMA_TAG  = 0x80;
-constexpr uint8_t QOI_OP_RUN_TAG   = 0xc0; 
-constexpr uint8_t QOI_OP_RGB_TAG   = 0xfe;
-constexpr uint8_t QOI_OP_RGBA_TAG  = 0xff;
+constexpr uint8_t QOI_OP_DIFF_TAG = 0x40;
+constexpr uint8_t QOI_OP_LUMA_TAG = 0x80;
+constexpr uint8_t QOI_OP_RUN_TAG = 0xc0;
+constexpr uint8_t QOI_OP_RGB_TAG = 0xfe;
+constexpr uint8_t QOI_OP_RGBA_TAG = 0xff;
 constexpr uint8_t QOI_PADDING[8] = {0u, 0u, 0u, 0u, 0u, 0u, 0u, 1u};
 constexpr uint8_t QOI_MASK_2 = 0xc0;
 
@@ -35,7 +35,6 @@ bool QoiEncode(uint32_t width, uint32_t height, uint8_t channels, uint8_t colors
  * @return bool true if it is a valid qoi format image, false otherwise
  */
 bool QoiDecode(uint32_t &width, uint32_t &height, uint8_t &channels, uint8_t &colorspace);
-
 
 bool QoiEncode(uint32_t width, uint32_t height, uint8_t channels, uint8_t colorspace) {
 
@@ -74,14 +73,89 @@ bool QoiEncode(uint32_t width, uint32_t height, uint8_t channels, uint8_t colors
         r = QoiReadU8();
         g = QoiReadU8();
         b = QoiReadU8();
-        if (channels == 4) a = QoiReadU8();
+        if (channels == 4)
+            a = QoiReadU8();
 
         // TODO
+        if (r == pre_r && g == pre_g && b == pre_b && a == pre_a) {
+            run++;
+            if (run == 62) {
+                // if run size reach the limit (64-2), output all the run data and clear it
+                QoiWriteU8(QOI_OP_RUN_TAG | (run - 1));
+                run = 0;
+            }
+        } else {
+            if (run > 0) {
+                QoiWriteU8(QOI_OP_RUN_TAG | (run - 1));
+                run = 0;
+            }
 
+            // get hash value
+            int index_pos = QoiColorHash(r, g, b, a) % 64;
+
+            if (history[index_pos][0] == r && history[index_pos][1] == g && history[index_pos][2] == b &&
+                history[index_pos][3] == a) {
+                // if the pixel is found in the history array, then it can be directly output.
+                // here we use QoiWriteU8(uint_8) as the output function,
+                // in which we should provide a number consists of two parts, two sign digits and six data digits.
+                QoiWriteU8(QOI_OP_INDEX_TAG | index_pos);
+            } else {
+                // copy the pixel generated now into the history array
+                history[index_pos][0] = r;
+                history[index_pos][1] = g;
+                history[index_pos][2] = b;
+                history[index_pos][3] = a;
+
+                // judge the mode of encoding
+                if (a == pre_a) {
+                    // calculate the difference between the pixel
+                    int8_t dif_r = r - pre_r;
+                    int8_t dif_g = g - pre_g;
+                    int8_t dif_b = b - pre_b;
+
+                    // calculate the difference between the dif
+                    int8_t dif_rg = dif_r - dif_g;
+                    int8_t dif_bg = dif_b - dif_g;
+
+                    // noticing that the data type here is int8_t (signed char) instead of unsigned char,
+                    // which would be easier to show the difference later.
+
+                    if (dif_r > -3 && dif_r < 2 && dif_g > -3 && dif_g < 2 && dif_b > -3 && dif_b < 2) {
+                        // if the difference of all color is small enough to be written in a single char
+                        QoiWriteU8(QOI_OP_DIFF_TAG | (dif_r + 2) << 4 | (dif_g + 2) << 2 | (dif_b + 2));
+                    } else if (dif_rg > -9 && dif_rg < 8 && dif_g > -33 && dif_g < 32 && dif_bg > -9 && dif_bg < 8) {
+                        // if the difference is adequate to be written in two chars
+                        QoiWriteU8(QOI_OP_LUMA_TAG | (dif_g + 32));
+                        QoiWriteU8((dif_rg + 8) << 4 | (dif_bg + 8));
+                    } else {
+                        // or else we can only write the difference in three chars
+                        QoiWriteU8(QOI_OP_RGB_TAG);
+                        QoiWriteU8(r);
+                        QoiWriteU8(g);
+                        QoiWriteU8(b);
+                    }
+                } else {
+                    // if it's the rgba mode
+                    QoiWriteU8(QOI_OP_RGBA_TAG);
+                    QoiWriteU8(r);
+                    QoiWriteU8(g);
+                    QoiWriteU8(b);
+                    QoiWriteU8(a);
+                }
+            }
+        }
+        // update the pre array
         pre_r = r;
         pre_g = g;
         pre_b = b;
         pre_a = a;
+    }
+
+    // Remember to clear the last run, which I forgot at first
+    // and find error when testing sample/rgba/dice.pam
+    if (run > 0) {
+        QoiWriteU8(QOI_OP_RUN_TAG | (run - 1));
+        run = 0;
     }
 
     // qoi-padding part
@@ -123,16 +197,70 @@ bool QoiDecode(uint32_t &width, uint32_t &height, uint8_t &channels, uint8_t &co
     for (int i = 0; i < px_num; ++i) {
 
         // TODO
+        if (run) {
+            // still continue running
+            run--;
+        } else {
+            // end of a run or other pixels
 
+            // first judge the sign of current pixel
+            uint8_t sign = QoiReadU8();
+
+            if (sign == QOI_OP_RGB_TAG) {
+                // the sign of three independent differences
+                r = QoiReadU8();
+                g = QoiReadU8();
+                b = QoiReadU8();
+            } else if (sign == QOI_OP_RGBA_TAG) {
+                // the sign of RGBA and four independent differeces
+                r = QoiReadU8();
+                g = QoiReadU8();
+                b = QoiReadU8();
+                a = QoiReadU8();
+            } else if ((sign & QOI_MASK_2) == QOI_OP_INDEX_TAG) {
+                // the sign of looking for index in the history array
+                r = history[sign % 64][0];
+                g = history[sign % 64][1];
+                b = history[sign % 64][2];
+                a = history[sign % 64][3];
+            } else if ((sign & QOI_MASK_2) == QOI_OP_DIFF_TAG) {
+                // the sign of having got the difference
+                // calculate the actual pixel
+                r += ((sign >> 4) & 0x03) - 2;
+                g += ((sign >> 2) & 0x03) - 2;
+                b += ((sign >> 0) & 0x03) - 2;
+            } else if ((sign & QOI_MASK_2) == QOI_OP_LUMA_TAG) {
+                // the sign of loading the difference from two numbers
+                int signn = QoiReadU8();
+                int dif_g = (sign & 0x3f) - 32;
+
+                // calculate the actual pixel
+                r += dif_g - 8 + ((signn >> 4) & 0x0f);
+                g += dif_g;
+                b += dif_g - 8 + ((signn >> 0) & 0x0f);
+            } else if ((sign & QOI_MASK_2) == QOI_OP_RUN_TAG) {
+                run = sign & 0x3f;
+            }
+
+            // record the current pixel in history array
+            int index_pos = QoiColorHash(r, g, b, a);
+            history[index_pos][0] = r;
+            history[index_pos][1] = g;
+            history[index_pos][2] = b;
+            history[index_pos][3] = a;
+        }
+        
         QoiWriteU8(r);
         QoiWriteU8(g);
         QoiWriteU8(b);
-        if (channels == 4) QoiWriteU8(a);
+        if (channels == 4)
+            QoiWriteU8(a);
     }
 
     bool valid = true;
     for (int i = 0; i < sizeof(QOI_PADDING) / sizeof(QOI_PADDING[0]); ++i) {
-        if (QoiReadU8() != QOI_PADDING[i]) valid = false;
+        if (QoiReadU8() != QOI_PADDING[i])
+            valid = false;
     }
 
     return valid;
