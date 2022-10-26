@@ -3,7 +3,9 @@
 该项目是上海交通大学致远学院 ACM 班的第一次程序设计大作业, 笔者在助教的讲解中了解到了 QOI 的实现原理和方法, 并补充了作业中的部分核心代码, 下面对其原理与代码进行讲解.
 
 原项目地址: https://github.com/phoboslab/qoi
+
 大作业地址: https://github.com/ACMClassCourse-2022/QOI-Format-Codec
+
 实现方案: https://github.com/Conless/HW1-QOI-Format-Codec
 
 ## 简介
