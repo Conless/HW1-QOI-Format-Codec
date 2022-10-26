@@ -120,7 +120,7 @@ bool QoiEncode(uint32_t width, uint32_t height, uint8_t channels, uint8_t colors
                     // noticing that the data type here is int8_t (signed char) instead of unsigned char,
                     // which would be easier to show the difference later.
 
-                    if (dif_r > -3 && dif_r < 2 && dif_g > -3 && dif_g < 2 && dif_b > -3 && dif_b < 2) {
+                    if (dif_r >= -2 && dif_r <= 1 && dif_g >= -2 && dif_g <= 1 && dif_b >= -2 && dif_b <= 1) {
                         // if the difference of all color is small enough to be written in a single char
                         QoiWriteU8(QOI_OP_DIFF_TAG | (dif_r + 2) << 4 | (dif_g + 2) << 2 | (dif_b + 2));
                     } else if (dif_rg > -9 && dif_rg < 8 && dif_g > -33 && dif_g < 32 && dif_bg > -9 && dif_bg < 8) {

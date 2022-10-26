@@ -26,7 +26,7 @@ void QoiToPnm(std::string fType, bool omitted) {
     // image type check
     if (fType == "rgb" && channels != 3) {
         std::cerr << "image type doesnt match the channel number" << std::endl;
-        return ;
+        return;
     }
     if (fType == "rgba" && channels != 4) {
         std::cerr << "image type doesnt match the channel number" << std::endl;
@@ -50,7 +50,8 @@ void QoiToPnm(std::string fType, bool omitted) {
     }
     temp.close();
 
-    if (omitted) std::remove(fName.c_str());
+    if (omitted)
+        std::remove(fName.c_str());
 }
 
 void PnmToQoi(std::string fType, bool omitted) {
@@ -91,7 +92,8 @@ void PnmToQoi(std::string fType, bool omitted) {
 
     temp.close();
 
-    if (omitted) std::remove(fName.c_str());
+    if (omitted)
+        std::remove(fName.c_str());
 }
 
 int main(int argc, char *argv[]) {
@@ -100,11 +102,12 @@ int main(int argc, char *argv[]) {
         return 0;
     }
     std::map<std::string, bool> args;
-    for (int i = 1; i < argc; ++i) args[argv[i]] = true;
+    for (int i = 1; i < argc; ++i)
+        args[argv[i]] = true;
 
     if (args["-h"]) {
-        std::string helpinfo = 
-R"(Hi, im a command line qoi <-> ppm/pam converter :-)
+        std::string helpinfo =
+            R"(Hi, im a command line qoi <-> ppm/pam converter :-)
 
 Usage: ./conv [options...] [<path/to/image] [>path/to/image]
     -h  Get help information
@@ -130,7 +133,9 @@ Examples:
     }
 
     std::string type = args["-4"] ? "rgba" : "rgb";
-    if (args["-e"]) PnmToQoi(type, args["-o"]);
-    if (args["-d"]) QoiToPnm(type, args["-o"]);
+    if (args["-e"])
+        PnmToQoi(type, args["-o"]);
+    if (args["-d"])
+        QoiToPnm(type, args["-o"]);
     return 0;
 }
