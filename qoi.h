@@ -249,7 +249,7 @@ bool QoiDecode(uint32_t &width, uint32_t &height, uint8_t &channels, uint8_t &co
             history[index_pos][2] = b;
             history[index_pos][3] = a;
         }
-        
+
         QoiWriteU8(r);
         QoiWriteU8(g);
         QoiWriteU8(b);

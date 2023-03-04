@@ -1,18 +1,20 @@
-# QOI Format —— 相当好的全新图像压缩详解
+# QOI Format —— “相当好”的全新图像压缩详解
 
 该项目是上海交通大学致远学院 ACM 班的第一次程序设计大作业, 笔者在助教的讲解中了解到了 QOI 的实现原理和方法, 并补充了作业中的部分核心代码, 下面对其原理与代码进行讲解.
 
-原项目地址: https://github.com/phoboslab/qoi
+原项目地址: /phoboslab/qoi
 
-大作业地址: https://github.com/ACMClassCourse-2022/QOI-Format-Codec
+大作业地址: /ACMClassCourse-2022/QOI-Format-Codec
 
-实现方案: https://github.com/Conless/HW1-QOI-Format-Codec
+实现方案: /Conless/HW1-QOI-Format-Codec
+
+域名由于zz原因发不出来, 意会一下就好了.
 
 ## 简介
 
-QOI (The Quite OK Image Format, "相当好"的图像格式) 是一种全新的图像无损压缩规范, 由 Dominic Szablewski 发明并于 2021 年 11 月 24 日首次宣布. 这是一种比 PNG 更容易实现, 更快, 无损的压缩方式, 开源于 [Github](https://github.com/phoboslab/qoi). 官方公告与视频显示, 其编码速度比 PNG 格式快 20-50 倍, 解码速度快 3-4 倍, 压缩大小与 PNG 相似.
+QOI (The Quite OK Image Format, "相当好"的图像格式) 是一种全新的图像无损压缩规范, 由 Dominic Szablewski 发明并于 2021 年 11 月 24 日首次宣布. 这是一种比 PNG 更容易实现, 更快, 无损的压缩方式, 开源于某著名开源网站/phoboslab/qoi. 官方公告与视频显示, 其编码速度比 PNG 格式快 20-50 倍, 解码速度快 3-4 倍, 压缩大小与 PNG 相似.
 
-结合 [油管视频](https://www.youtube.com/watch?v=EFUYNoFRHQI) 观看效果更佳.
+结合 [~~油.管~~B站视频](https://www.bilibili.com/video/BV1Wg411d7Kp) 观看效果更佳.
 
 ## 粗成品
 
@@ -99,7 +101,7 @@ if (dif_g >= -32 && dif_g <= 31 &&
 }
 ```
 
-如代码所示, 如果 G 通道的差值在 -32~31 之间, 其它两通道的变化幅度与 G 通道 **变化幅度** 差值差值在 -8~7 之间, 就会在第一个数字的前两位存储标识符, 后六位存储 G 通道上的差值; 在第二个数字的前四位与后四位分别存储 RG 通道差值**的差**, BG 通道差值**的差**.
+如代码所示, 如果 G 通道的差值在 $-32\~31$ 之间, 其它两通道的变化幅度与 G 通道 **变化幅度** 差值差值在 $-8\~7$ 之间, 就会在第一个数字的前两位存储标识符, 后六位存储 G 通道上的差值; 在第二个数字的前四位与后四位分别存储 RG 通道差值**的差**, BG 通道差值**的差**.
 
 最后, 如果上面一切条件都不满足 (悲), 那就只好像第一个一样原样储存了, 也就是
 
@@ -116,7 +118,7 @@ data[++] = b;
 
 ## 代码分析
 
-下面分析 [代码](https://github.com/Conless/HW1-QOI-Format-Codec) 的核心实现步骤, 以编码过程为例, 解码过程类同.
+下面分析代码的核心实现步骤, 以编码过程为例, 解码过程类同.
 
 首先是主函数的核心执行架构, 无需多言.
 
